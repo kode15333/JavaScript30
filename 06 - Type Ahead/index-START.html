@@ -7,16 +7,82 @@
 </head>
 <body>
 
-  <form class="search-form">
-    <input type="text" class="search" placeholder="City or State">
-    <ul class="suggestions">
-      <li>Filter for a city</li>
-      <li>or a state</li>
-    </ul>
-  </form>
+<form class="search-form">
+  <input type="text" class="search" name="search" placeholder="City or State">
+  <ul class="suggestions">
+    <li>Filter for a city</li>
+    <li>or a state</li>
+  </ul>
+</form>
 <script>
-const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+  const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json'
 
+  const list = []
+  const getDate = async () => {
+    const response = await fetch(endpoint)
+    const result = await response.json()
+    list.push(...result)
+    return result
+  }
+
+  const $form = document.querySelector('form.search-form')
+  const $suggestions = document.querySelector('.suggestions')
+  const $input = document.querySelector('.search')
+
+  function getCallbackfn (regex, searchValue) {
+    return ({ city, state, population }) => {
+
+      const cityName = city.replace(regex, `<span class="hl">${searchValue}</span>`)
+      const li = document.createElement('li')
+      li.innerHTML = `
+        <span class="name">${cityName} ${state}</span>
+          <span class="population">${population}</span>
+
+      `
+      $suggestions.insertAdjacentElement('afterbegin', li)
+    }
+  }
+
+  function handleChange(e){
+
+    const regex = new RegExp(this.value, 'gi')
+    const suggestions = list.filter(({ city, state }) => city.match(regex) || state.match(regex))
+    suggestions.forEach(({city, state, population}) => {
+      const cityName = city.replace(regex, `<span class="hl">${this.value}</span>`)
+      const stateName = state.replace(regex, `<span class="hl">${this.value}</span>`)
+      const li = document.createElement('li')
+      li.innerHTML = `
+        <span class="name">${cityName} ${stateName}</span>
+          <span class="population">${population}</span>
+
+      `
+      $suggestions.insertAdjacentElement('afterbegin', li)
+    })
+
+
+  }
+
+  function handleSubmit (e) {
+    e.preventDefault()
+
+    $suggestions.innerHTML = ''
+    const formDate = new FormData(this)
+    const searchValue = formDate.get('search')
+    if (searchValue.trim() === '') {
+      return
+    }
+
+
+    const regex = new RegExp(searchValue, 'gi')
+    const suggestions = list.filter(({ city, state }) => city.match(regex) || state.match(regex))
+    suggestions.forEach(getCallbackfn(regex, searchValue))
+
+    return
+  }
+
+  getDate()
+  $input.addEventListener('change', handleChange)
+  $input.addEventListener('keyup', handleChange)
 </script>
 </body>
 </html>
